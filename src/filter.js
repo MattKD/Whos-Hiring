@@ -7,7 +7,7 @@ function filterPost(post, filters) {
   let filter_strs = filters.filters;
   let negfilter_strs = filters.negfilters;
 
-  if (filter_strs.length == 0) {
+  if (filter_strs.length === 0) {
     return true;
   }
 

@@ -2,9 +2,10 @@ require("babel-polyfill");
 require("isomorphic-fetch");
 const React = require("react");
 const ReactDOM = require("react-dom");
-const { Post, PostList } = require("./components");
 const { month_id_list, region_filter_list } = require("./data");
 const { getSomePosts, getPostIDs } = require("./api");
+const { PostLists, RegionSelect, MonthSelect, LoadMsg } = 
+  require("./components");
 
 class Month {
   constructor(id, name) {
@@ -17,7 +18,7 @@ class Month {
   }
 
   allPostsLoaded() {
-    return this.num_posts == this.num_posts_loaded;
+    return this.num_posts === this.num_posts_loaded;
   }
 }
 
@@ -25,7 +26,9 @@ class App extends React.Component {
   constructor() {
     super();
 
-    const month_names = month_id_list.map((month_id) => month_id[0]);
+    const month_names = {
+      months: month_id_list.map((month_id) => month_id[0])
+    };
 
     const months = month_id_list.map((month_id) => {
       const name = month_id[0];
@@ -33,14 +36,19 @@ class App extends React.Component {
       return new Month(id, name);
     });
 
-    const month_lookup = new Map();
+    const month_lookup = {
+      lookup: new Map()
+    };
+
     months.forEach((month) => {
-      month_lookup.set(month.name, month);
+      month_lookup.lookup.set(month.name, month);
     });
 
-    const region_names = region_filter_list.map((region_filter) => {
-      return region_filter[0];
-    });
+    const region_names = {
+      regions: region_filter_list.map((region_filter) => {
+        return region_filter[0];
+      })
+    };
 
     const region_lookup = new Map();
     region_filter_list.forEach((region_filters) => {
@@ -52,8 +60,8 @@ class App extends React.Component {
       region_lookup.set(region, filters);
     });
 
-    const selected_month = month_names[0];
-    const selected_region = region_names[0];
+    const selected_month = month_names.months[0];
+    const selected_region = region_names.regions[0];
 
     this.state = {
       selected_month: selected_month,
@@ -67,6 +75,9 @@ class App extends React.Component {
       delay_size: 50, // initial num of posts to append to dom at a time
       delay_size2: 300, // num of posts to append to dom at a time
     };
+
+    this.regionChanged = this.regionChanged.bind(this)
+    this.monthChanged = this.monthChanged.bind(this)
   }
 
   componentDidMount() {
@@ -75,13 +86,13 @@ class App extends React.Component {
 
   setMonth(month_name) {
     let month_lookup = this.state.month_lookup;
-    let month = month_lookup.get(month_name);
+    let month = month_lookup.lookup.get(month_name);
     let posts = month.posts;
 
     const handleNewPost = (post) => {
       posts.push(post);
       this.setState({
-        month_lookup: month_lookup 
+        month_lookup: { lookup: month_lookup.lookup }
       });
     }; 
 
@@ -89,7 +100,7 @@ class App extends React.Component {
       selected_month: month_name,
     });
 
-    if (month.loaded == false) {
+    if (month.loaded === false) {
       month.loaded = true;
       getPostIDs(month.id)
       .then((thread) => {
@@ -97,7 +108,7 @@ class App extends React.Component {
         month.num_posts = ids.length;
         month.thread_title = thread.title;
         this.setState({
-          month_lookup: month_lookup
+          month_lookup: { lookup: month_lookup.lookup }
         });
 
         const get_num = this.state.post_get_num;
@@ -107,88 +118,42 @@ class App extends React.Component {
     }
   }
 
+  regionChanged(event) {
+    if (event.target.value) {
+      this.setState({
+        selected_region: event.target.value
+      })
+    }
+  }
+
+  monthChanged(event) {
+    if (event.target.value) {
+      this.setMonth(event.target.value);
+    }
+  }
+
   render() {
-    const regionSelect = this.state.region_names.map((region) => {
-      return (
-        <option key={region} value={region}>{region}</option>
-      );
-    });
-
-    const monthSelect = this.state.month_names.map((month) => {
-      return (
-        <option key={month} value={month}>{month}</option>
-      );
-    });
-
-    const regionChanged = (event) => {
-      if (event.target.value) {
-        this.setState({
-          selected_region: event.target.value
-        })
-      }
-    };
-
-    const monthChanged = (event) => {
-      if (event.target.value) {
-        this.setMonth(event.target.value);
-      }
-    };
-
-    const month = this.state.month_lookup.get(this.state.selected_month);
+    const selected_month = this.state.selected_month;
+    const month_lookup = this.state.month_lookup;
+    const month_names = this.state.month_names;
+    const month = month_lookup.lookup.get(selected_month);
     const posts = month.posts;
     const filters = this.state.region_lookup.get(this.state.selected_region);
-
     const num_loaded = month.posts.length;
     const num_posts = month.num_posts;
-    const load_msg_str = `Loading... (${num_loaded}/${num_posts})`;
-    const loadingStyle = {
-      display:  num_loaded == num_posts ? "none" : "block"
-    };
-    const load_msg = <h2 style={loadingStyle}>{load_msg_str}</h2>
-
     const delay_size = this.state.delay_size;
     const delay_size2 = this.state.delay_size2;
-
-    let post_lists = this.state.month_names.map((name) => {
-      const month = this.state.month_lookup.get(name);
-      const posts = month.posts;
-
-      let num_show = 0;
-      if (posts.length == month.num_posts) {
-        num_show = posts.length;
-      } else if (posts.length == delay_size) {
-        num_show = delay_size;
-      } else if (posts.length > delay_size) {
-        num_show = Math.trunc(posts.length / delay_size2) * delay_size2;
-      }
-
-      const show = name == this.state.selected_month;
-      const list_style = {
-        display:  show ? "block" : "none"
-      };
-
-      return (
-        <div style={list_style} key={name}>
-          <PostList posts={posts} filters={filters} num_show={num_show} />
-        </div>
-      );
-    });
 
     return (
       <div>
         <h1>{month.thread_title} </h1>
-        {load_msg}
-        <div>
-          <label htmlFor="month_select">Month</label>
-          <select id="month_select" onChange={monthChanged} >
-            {monthSelect}
-          </select>
-          <label htmlFor="state_select">Region</label>
-          <select id="state_select" onChange={regionChanged} >
-            {regionSelect}
-          </select>
-        </div>
-        {post_lists}
+        <LoadMsg num_loaded={num_loaded} num_posts={num_posts} />
+        <MonthSelect monthChanged={this.monthChanged} months={month_names} />
+        <RegionSelect regionChanged={this.regionChanged} 
+          regions={this.state.region_names} />
+        <PostLists selected_month={selected_month} months={month_names} 
+          lookup={month_lookup} delay_size={delay_size} 
+          delay_size2={delay_size2} filters={filters} />
       </div>
     );
   }
