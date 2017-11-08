@@ -2,19 +2,20 @@ require("babel-polyfill");
 require("isomorphic-fetch");
 const React = require("react");
 const ReactDOM = require("react-dom");
-const { month_id_list, region_filter_list } = require("./data");
-const { getSomePosts, getPostIDs } = require("./api");
+const { region_filter_list } = require("./data");
+const { getSomePosts, getHiringSubs } = require("./api");
 const { PostLists, RegionSelect, MonthSelect, LoadMsg } = 
   require("./components");
 
 class Month {
-  constructor(id, name) {
-    this.id = id;
-    this.name = name;
+  constructor(id, name, post_ids, title) {
+    this.id = id || -1;
+    this.name = name || "";
     this.posts = [];
+    this.thread_title = title || "";
+    this.num_posts = post_ids ? post_ids.length : 0;
+    this.post_ids = post_ids || [];
     this.loaded = false;
-    this.thread_title = "Ask HN: Who is hiring?";
-    this.num_posts = 0;
   }
 
   allPostsLoaded() {
@@ -27,22 +28,13 @@ class App extends React.Component {
     super();
 
     const month_names = {
-      months: month_id_list.map((month_id) => month_id[0])
+      months: []
     };
 
-    const months = month_id_list.map((month_id) => {
-      const name = month_id[0];
-      const id = month_id[1];
-      return new Month(id, name);
-    });
-
+    const months = [];
     const month_lookup = {
       lookup: new Map()
     };
-
-    months.forEach((month) => {
-      month_lookup.lookup.set(month.name, month);
-    });
 
     const region_names = {
       regions: region_filter_list.map((region_filter) => {
@@ -60,7 +52,7 @@ class App extends React.Component {
       region_lookup.set(region, filters);
     });
 
-    const selected_month = month_names.months[0];
+    const selected_month = "";
     const selected_region = region_names.regions[0];
 
     this.state = {
@@ -81,7 +73,43 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    this.setMonth(this.state.selected_month);
+    getHiringSubs(3).then((subs) => {
+      const month_names = {
+        months: subs.map((sub) => {
+          // titles are in form "Ask HN: Who wants to be hired? (Month Year)"
+          // so extract "Month Year"
+          let match = sub.title.match(/\((.*)\)/);
+          if (match) {
+            return match[1];
+          } else {
+            return sub.title;
+          }
+        })
+      };
+
+      const months = []; 
+      for (let i = 0; i < subs.length; i++) {
+        const name = month_names.months[i];
+        const id = subs[i].id;
+        const post_ids = subs[i].kids;
+        const title = subs[i].title;
+        months.push(new Month(id, name, post_ids, title));
+      };
+
+      const month_lookup = {
+        lookup: new Map()
+      };
+
+      months.forEach((month) => {
+        month_lookup.lookup.set(month.name, month);
+      });
+
+      this.setState({
+        month_names,
+        month_lookup
+      });
+      this.setMonth(month_names.months[0]);
+    });
   }
 
   setMonth(month_name) {
@@ -102,19 +130,9 @@ class App extends React.Component {
 
     if (month.loaded === false) {
       month.loaded = true;
-      getPostIDs(month.id)
-      .then((thread) => {
-        let ids = thread.kids;
-        month.num_posts = ids.length;
-        month.thread_title = thread.title;
-        this.setState({
-          month_lookup: { lookup: month_lookup.lookup }
-        });
-
-        const get_num = this.state.post_get_num;
-        const get_timeout = this.state.post_get_timeout;
-        getSomePosts(ids, get_num, get_timeout, handleNewPost);
-      });
+      const get_num = this.state.post_get_num;
+      const get_timeout = this.state.post_get_timeout;
+      getSomePosts(month.post_ids, get_num, get_timeout, handleNewPost);
     }
   }
 
@@ -136,17 +154,18 @@ class App extends React.Component {
     const selected_month = this.state.selected_month;
     const month_lookup = this.state.month_lookup;
     const month_names = this.state.month_names;
-    const month = month_lookup.lookup.get(selected_month);
+    const month = month_lookup.lookup.get(selected_month) || new Month();
+    const thread_title = month.thread_title;
     const posts = month.posts;
     const filters = this.state.region_lookup.get(this.state.selected_region);
-    const num_loaded = month.posts.length;
+    const num_loaded = posts.length;
     const num_posts = month.num_posts;
     const delay_size = this.state.delay_size;
     const delay_size2 = this.state.delay_size2;
 
     return (
       <div>
-        <h1>{month.thread_title} </h1>
+        <h1>{thread_title} </h1>
         <LoadMsg num_loaded={num_loaded} num_posts={num_posts} />
         <MonthSelect monthChanged={this.monthChanged} months={month_names} />
         <RegionSelect regionChanged={this.regionChanged} 

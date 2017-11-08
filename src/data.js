@@ -1,15 +1,4 @@
 
-module.exports.month_id_list = [
-  ["November-17", 15601729],
-  ["October-17", 15384262],
-  ["September-17", 15148885],
-  ["August-17", 14901313],
-  ["July-17", 14688684],
-  ["June-17", 14460777],
-  ["May-17", 14238005],
-  ["April-17", 14023198]
-];
-
 module.exports.region_filter_list = [
   ["All", []],
   ["Remote", ["remote/i"], ["no remote/i"]],
