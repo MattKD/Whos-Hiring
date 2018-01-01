@@ -128,7 +128,7 @@ class PostLists extends React.Component {
       const month = lookup.get(nextProps.selected_month);
       const posts = month.posts;
       const num_loaded = posts.length;
-      const num_posts = posts.num_posts;
+      const num_posts = month.num_posts;
       const delay_size = nextProps.delay_size;
       const delay_size2 = nextProps.delay_size2;
 
