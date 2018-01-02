@@ -5,9 +5,11 @@ class LoadMsg extends React.PureComponent {
   render() {
     const num_loaded = this.props.num_loaded;
     const num_posts = this.props.num_posts;
-    const load_msg_str = `Loading... (${num_loaded}/${num_posts})`;
+    const load_msg_str = num_posts === 0 
+      ? "Loading most recent months..." 
+      : `Loading... (${num_loaded}/${num_posts})`;
     const loadingStyle = {
-      display:  num_loaded === num_posts ? "none" : "block"
+      display:  num_posts > 0 && num_loaded === num_posts ? "none" : "block"
     };
     
     return <h2 style={loadingStyle}>{load_msg_str}</h2>

@@ -12,7 +12,7 @@ class Month {
     this.id = id || -1;
     this.name = name || "";
     this.posts = [];
-    this.thread_title = title || "";
+    this.thread_title = title || "Ask HN: Who is hiring?";
     this.num_posts = post_ids ? post_ids.length : 0;
     this.post_ids = post_ids || [];
     this.loaded = false;
