@@ -12,16 +12,27 @@ function fetchUser(user) {
 
 function getHiringSubs(num_ids) {
   return fetchUser("whoishiring").then((json) => {
-    // whoishiring bot posts 3 threads a month
-    let subs = json.submitted.slice(0, num_ids*3).map((id) => {
+    // whoishiring bot posts 3 threads a month, but if any were deleted
+    // and reposted then they'll appear twice
+    let subs = json.submitted.slice(0, num_ids*6).map((id) => {
       return fetchPost(id);
     });
 
     // return submissions with title "Who is hiring", sorted by most recent
     return Promise.all(subs).then((subs) => {
-      return subs.filter((sub) => {
+      subs = subs.filter((sub) => {
         return sub.title.indexOf("Who is hiring?") !== -1;
       }).sort((a, b) => b.time - a.time);
+
+      let subs_set = new Set(); // to remove deleted duplicates
+      let subs2 = []; // store only unique submissions, no deleted ones
+      for (let sub of subs) {
+        if (!subs_set.has(sub.title)) {
+          subs_set.add(sub.title);
+          subs2.push(sub);
+        }
+      }
+      return subs2.slice(0, num_ids); // return up to num_ids submissions
     });
   });
 }
