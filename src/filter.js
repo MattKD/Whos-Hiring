@@ -1,6 +1,6 @@
 
 function filterPost(post, filters) {
-  if (!post.text) {
+  if (!post || !post.text) {
     return false;
   }
 

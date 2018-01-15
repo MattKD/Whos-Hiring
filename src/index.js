@@ -118,6 +118,10 @@ class App extends React.Component {
     let posts = month.posts;
 
     const handleNewPost = (post) => {
+      if (!post) {
+        month.num_posts -= 1;
+        return;
+      }
       posts.push(post);
       this.setState({
         month_lookup: { lookup: month_lookup.lookup }
