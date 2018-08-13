@@ -1,7 +1,7 @@
-
-module.exports.region_filter_list = [
+let region_filter_list = [
   ["All", []],
   ["Remote", ["remote/i"], ["no remote/i"]],
+
   ["Arkansas", ["Arkansas", "Little Rock"]],
   ["Arizona", ["Arizona", "Phoenix", "PHX", "Scottdale"]],
   ["California", ["California", "San Francisco", "San Diego", 
@@ -50,4 +50,16 @@ module.exports.region_filter_list = [
          "Newcastle", "Edinburgh"]],
 ];
 
+// all all positive filters together as negative filters for 'Other'.
+// skip 'All' and 'Remote'
+let other_negfilters = [];
+for (let i = 2; i < region_filter_list.length; i++) {
+  let region_filter = region_filter_list[i];
+  for (let filter of region_filter[1]) {
+    other_negfilters.push(filter);
+  }
+}
 
+region_filter_list.push(["Other", [], other_negfilters]);
+
+module.exports.region_filter_list = region_filter_list;
