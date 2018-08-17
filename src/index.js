@@ -118,10 +118,17 @@ class App extends React.Component {
     let posts = month.posts;
 
     const handleNewPost = (post) => {
-      if (!post) {
+      if (!post || !post.text) {
         month.num_posts -= 1;
         return;
       }
+      let tmp_div = document.createElement("div");
+      tmp_div.innerHTML = post.text;
+      let links = tmp_div.getElementsByTagName("a");
+      for (let link of links) {
+        link.setAttribute("target", "_blank");
+      }
+      post.text = tmp_div.innerHTML;
       posts.push(post);
       this.setState({
         month_lookup: { lookup: month_lookup.lookup }
