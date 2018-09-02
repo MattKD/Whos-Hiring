@@ -2,24 +2,62 @@ const React = require("react");
 const { filterPost } = require("./filter");
 
 class LoadMsg extends React.PureComponent {
+  constructor() {
+    super();
+    this.timer_id = null;
+    this.state = {
+      num_dots: 1
+    };
+  }
+
+  stopAnimation() {
+    clearInterval(this.timer_id);
+    this.timer_id = null;
+  }
+
+  startAnimation() {
+    if (this.timer_id !== null) {
+      return;
+    }
+
+    this.timer_id = setInterval(() => {
+      this.setState((prevState) => {
+        let num_dots = prevState.num_dots;
+        if (num_dots === 3) {
+          num_dots = 1;
+        } else {
+          num_dots += 1;
+        }
+        return { num_dots };
+      });
+    }, 1000);
+  }
+
   render() {
     const num_loaded = this.props.num_loaded;
     const num_posts = this.props.num_posts;
+    const dots = ".".repeat(this.state.num_dots);
+    let display = "block";
+
+    if (num_posts > 0 && (num_loaded === num_posts)) {
+      this.stopAnimation();
+      display = "none";
+    } else if (this.timer_id === null) {
+      this.startAnimation();
+    }
+
     const load_msg_str = num_posts === 0 
-      ? "Loading most recent months..." 
-      : `Loading... (${num_loaded}/${num_posts})`;
-    const loadingStyle = {
-      display:  num_posts > 0 && num_loaded === num_posts ? "none" : "block"
-    };
+      ? `Loading most recent months${dots}` 
+      : `Loading${dots} (${num_loaded}/${num_posts})`;
+    const loadingStyle = { display };
     
     return <h2 style={loadingStyle}>{load_msg_str}</h2>
   }
 }
 
-
 class RegionSelect extends React.PureComponent {
   render() {
-    const regions = this.props.regions.regions;
+    const regions = this.props.regions;
     const regionChanged = this.props.regionChanged;
 
     const regionSelect = regions.map((region) => {
@@ -41,7 +79,7 @@ class RegionSelect extends React.PureComponent {
 
 class MonthSelect extends React.PureComponent {
   render() {
-    const months = this.props.months.months;
+    const months = this.props.months;
     const monthChanged = this.props.monthChanged;
 
     const monthSelect = months.map((month) => {
@@ -61,14 +99,7 @@ class MonthSelect extends React.PureComponent {
   }
 }
 
-class Post extends React.Component {
-  shouldComponentUpdate(nextProps) {
-    if (nextProps.show === true) {
-      return true;
-    }
-    return false;
-  }
-
+class Post extends React.PureComponent {
   render() {
     const id = this.props.id;
     const text = this.props.text;
@@ -83,14 +114,7 @@ class Post extends React.Component {
   }
 };
 
-class PostList extends React.Component {
-  shouldComponentUpdate(nextProps) {
-    if (nextProps.show === true) {
-      return true;
-    }
-    return false;
-  }
-
+class PostList extends React.PureComponent {
   render() {
     let posts = this.props.posts;
     let filters = this.props.filters;
@@ -102,7 +126,7 @@ class PostList extends React.Component {
       return (
         <div key={post.id} style={post_style}>
           <hr/>
-          <Post id={post.id} text={post.text} show={show} />
+          <Post id={post.id} text={post.text} />
         </div>
       );
     });
@@ -115,57 +139,28 @@ class PostList extends React.Component {
   }
 };
 
-class PostLists extends React.Component {
-  shouldComponentUpdate(nextProps) {
-    if (this.props.selected_month != nextProps.selected_month ||
-        this.props.delay_size != nextProps.delay_size ||
-        this.props.delay_size2 != nextProps.delay_size2 ||
-        this.props.months != nextProps.months ||
-        this.props.filters != nextProps.filters) {
-      return true;
-    }
-
-    if (this.props.lookup != nextProps.lookup) {
-      const lookup = nextProps.lookup.lookup;
-      const month = lookup.get(nextProps.selected_month);
-      const posts = month.posts;
-      const num_loaded = posts.length;
-      const num_posts = month.num_posts;
-      const delay_size = nextProps.delay_size;
-      const delay_size2 = nextProps.delay_size2;
-
-      if (num_loaded === num_posts ||
-          num_loaded === delay_size ||
-          (num_loaded > delay_size && num_loaded % delay_size2 === 0)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
+class PostLists extends React.PureComponent {
   render() {
-    const delay_size = this.props.delay_size;
-    const delay_size2 = this.props.delay_size2;
-    const months = this.props.months.months;
-    const month_lookup = this.props.lookup.lookup;
+    const selected_month = this.props.selected_month;
+    const month_posts = this.props.month_posts;
     const filters = this.props.filters;
 
-    const post_lists = months.map((name) => {
-      const month = month_lookup.get(name);
-      const posts = month.posts;
+    let post_lists = [];
+    for (let kv of month_posts.entries()) {
+      const name = kv[0];
+      const posts = kv[1];
 
-      const show = name === this.props.selected_month;
+      const show = name === selected_month;
       const list_style = {
         display:  show ? "block" : "none"
       };
 
-      return (
+      post_lists.push(
         <div style={list_style} key={name}>
-          <PostList posts={posts} filters={filters} show={show} />
+          <PostList posts={posts} filters={filters} />
         </div>
       );
-    });
+    }
 
     return <div>{post_lists}</div>;
   }

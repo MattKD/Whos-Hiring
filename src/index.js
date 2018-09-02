@@ -27,45 +27,31 @@ class App extends React.Component {
   constructor() {
     super();
 
-    const month_names = {
-      months: []
-    };
+    this.month_lookup = new Map();
+    this.delay_size = 50; // initial num of posts to append to dom at a time
+    this.delay_size2 = 250; // num of posts to append to dom at a time
+    this.post_get_num = 20; // num of ajax calls to make at once
+    this.post_get_timeout = 200; // num of ms between batched ajax calls
 
-    const months = [];
-    const month_lookup = {
-      lookup: new Map()
-    };
+    this.region_names = region_filter_list.map((region_filter) => {
+      return region_filter[0];
+    });
 
-    const region_names = {
-      regions: region_filter_list.map((region_filter) => {
-        return region_filter[0];
-      })
-    };
-
-    const region_lookup = new Map();
+    this.region_lookup = new Map();
     region_filter_list.forEach((region_filters) => {
       const region = region_filters[0];
       const filters = {
         filters: region_filters[1],
         negfilters: region_filters[2] || []
       };
-      region_lookup.set(region, filters);
+      this.region_lookup.set(region, filters);
     });
 
-    const selected_month = "";
-    const selected_region = region_names.regions[0];
-
     this.state = {
-      selected_month: selected_month,
-      selected_region: selected_region,
-      month_names: month_names,
-      month_lookup: month_lookup,
-      region_names: region_names,
-      region_lookup: region_lookup,
-      post_get_num: 20, // num of ajax calls to make at once
-      post_get_timeout: 200, // num of ms between batched ajax calls
-      delay_size: 50, // initial num of posts to append to dom at a time
-      delay_size2: 300, // num of posts to append to dom at a time
+      selected_month: "",
+      selected_region: this.region_names[0],
+      month_names: [],
+      month_posts: new Map(),
     };
 
     this.regionChanged = this.regionChanged.bind(this)
@@ -74,65 +60,79 @@ class App extends React.Component {
 
   componentDidMount() {
     getHiringSubs(3).then((subs) => {
-      const month_names = {
-        months: subs.map((sub) => {
-          // titles are in form "Ask HN: Who wants to be hired? (Month Year)"
-          // so extract "Month Year"
-          let match = sub.title.match(/\((.*)\)/);
-          if (match) {
-            return match[1];
-          } else {
-            return sub.title;
-          }
-        })
-      };
+      const month_names = subs.map((sub) => {
+        // titles are in form "Ask HN: Who is hiring? (Month Year)"
+        // so extract "Month Year"
+        let match = sub.title.match(/\((.*)\)/);
+        if (match) {
+          return match[1];
+        } else {
+          return sub.title;
+        }
+      });
 
-      const months = []; 
-      for (let i = 0; i < subs.length; i++) {
-        const name = month_names.months[i];
-        const id = subs[i].id;
-        const post_ids = subs[i].kids;
-        const title = subs[i].title;
-        months.push(new Month(id, name, post_ids, title));
-      };
-
-      const month_lookup = {
-        lookup: new Map()
-      };
+      const months = subs.map((sub, i) => {
+        const name = month_names[i];
+        const id = sub.id;
+        const post_ids = sub.kids;
+        const title = sub.title;
+        return new Month(id, name, post_ids, title);
+      });
 
       months.forEach((month) => {
-        month_lookup.lookup.set(month.name, month);
+        this.month_lookup.set(month.name, month);
       });
 
       this.setState({
         month_names,
-        month_lookup
       });
-      this.setMonth(month_names.months[0]);
+
+      this.setMonth(month_names[0]);
     });
   }
 
   setMonth(month_name) {
-    let month_lookup = this.state.month_lookup;
-    let month = month_lookup.lookup.get(month_name);
+    let month = this.month_lookup.get(month_name);
     let posts = month.posts;
 
     const handleNewPost = (post) => {
       if (!post || !post.text) {
         month.num_posts -= 1;
-        return;
+      } else {
+        let tmp_div = document.createElement("div");
+        tmp_div.innerHTML = post.text;
+        let links = tmp_div.getElementsByTagName("a");
+        for (let link of links) {
+          link.setAttribute("target", "_blank");
+        }
+        post.text = tmp_div.innerHTML;
+        posts.push(post);
       }
-      let tmp_div = document.createElement("div");
-      tmp_div.innerHTML = post.text;
-      let links = tmp_div.getElementsByTagName("a");
-      for (let link of links) {
-        link.setAttribute("target", "_blank");
+
+      const month_posts = this.state.month_posts;
+      const shown_posts = month_posts.get(month_name) || [];
+      const num_new_posts = posts.length - shown_posts.length;
+      let update_needed = false;
+
+      if (posts.length === month.num_posts) {
+        update_needed = true;
+      } else if (num_new_posts > 0) {
+        if (posts.length === this.delay_size) {
+          update_needed = true;
+        } else if (posts.length > this.delay_size && 
+                   num_new_posts === this.delay_size2) {
+          update_needed = true;
+        }
       }
-      post.text = tmp_div.innerHTML;
-      posts.push(post);
-      this.setState({
-        month_lookup: { lookup: month_lookup.lookup }
-      });
+
+      if (update_needed) {
+        this.setState((prevState) => {
+          let posts_cpy = [].concat(posts);
+          let month_posts = new Map(prevState.month_posts);
+          month_posts.set(month_name, posts_cpy);
+          return { month_posts };
+        });
+      }
     }; 
 
     this.setState({
@@ -141,8 +141,8 @@ class App extends React.Component {
 
     if (month.loaded === false) {
       month.loaded = true;
-      const get_num = this.state.post_get_num;
-      const get_timeout = this.state.post_get_timeout;
+      const get_num = this.post_get_num;
+      const get_timeout = this.post_get_timeout;
       getSomePosts(month.post_ids, get_num, get_timeout, handleNewPost);
     }
   }
@@ -163,16 +163,15 @@ class App extends React.Component {
 
   render() {
     const selected_month = this.state.selected_month;
-    const month_lookup = this.state.month_lookup;
+    const selected_region = this.state.selected_region;
+    const month_posts = this.state.month_posts;
     const month_names = this.state.month_names;
-    const month = month_lookup.lookup.get(selected_month) || new Month();
-    const thread_title = month.thread_title;
-    const posts = month.posts;
-    const filters = this.state.region_lookup.get(this.state.selected_region);
+    const month = this.month_lookup.get(selected_month) || new Month();
+    const posts = month_posts.get(selected_month) || [];
     const num_loaded = posts.length;
     const num_posts = month.num_posts;
-    const delay_size = this.state.delay_size;
-    const delay_size2 = this.state.delay_size2;
+    const thread_title = month.thread_title;
+    const filters = this.region_lookup.get(selected_region);
 
     return (
       <div>
@@ -180,10 +179,9 @@ class App extends React.Component {
         <LoadMsg num_loaded={num_loaded} num_posts={num_posts} />
         <MonthSelect monthChanged={this.monthChanged} months={month_names} />
         <RegionSelect regionChanged={this.regionChanged} 
-          regions={this.state.region_names} />
-        <PostLists selected_month={selected_month} months={month_names} 
-          lookup={month_lookup} delay_size={delay_size} 
-          delay_size2={delay_size2} filters={filters} />
+          regions={this.region_names} />
+        <PostLists selected_month={selected_month} month_posts={month_posts} 
+          filters={filters} />
       </div>
     );
   }
