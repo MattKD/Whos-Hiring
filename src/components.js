@@ -47,8 +47,8 @@ class LoadMsg extends React.PureComponent {
     }
 
     const load_msg_str = num_posts === 0 
-      ? `Loading most recent months${dots}` 
-      : `Loading${dots} (${num_loaded}/${num_posts})`;
+      ? `Loading posts${dots}` 
+      : `Loading posts (${num_loaded}/${num_posts})${dots}`;
     const loadingStyle = { display };
     
     return <h2 style={loadingStyle}>{load_msg_str}</h2>
@@ -117,9 +117,13 @@ class Post extends React.PureComponent {
 class PostList extends React.PureComponent {
   render() {
     let posts = this.props.posts;
-    let filters = this.props.filters;
+    let filter_set = this.props.filter_set;
+    if (filter_set === null) {
+      filter_set = new Set();
+    }
+
     let $posts = posts.map((post) => {
-      const show = filterPost(post, filters);
+      const show = filter_set.has(post.id);
       const post_style = {
         display:  show ? "block" : "none"
       };
@@ -142,8 +146,10 @@ class PostList extends React.PureComponent {
 class PostLists extends React.PureComponent {
   render() {
     const selected_month = this.props.selected_month;
+    const selected_region = this.props.selected_region;
     const month_posts = this.props.month_posts;
     const filters = this.props.filters;
+    let num_shown = 0;
 
     let post_lists = [];
     for (let kv of month_posts.entries()) {
@@ -155,14 +161,30 @@ class PostLists extends React.PureComponent {
         display:  show ? "block" : "none"
       };
 
+      let filter_set = null;
+      if (show) {
+        filter_set = new Set();
+        posts.forEach((post) => {
+          if (filterPost(post, filters)) {
+            filter_set.add(post.id);
+          }
+        });
+        num_shown = filter_set.size;
+      }
+
       post_lists.push(
         <div style={list_style} key={name}>
-          <PostList posts={posts} filters={filters} />
+          <PostList posts={posts} filter_set={filter_set} />
         </div>
       );
     }
 
-    return <div>{post_lists}</div>;
+    return (
+      <div>
+      <h3>Showing {num_shown} posts for {selected_region}</h3>
+      {post_lists}
+      </div>
+    );
   }
 };
 

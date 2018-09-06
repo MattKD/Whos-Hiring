@@ -28,10 +28,10 @@ class App extends React.Component {
     super();
 
     this.month_lookup = new Map();
-    this.delay_size = 50; // initial num of posts to append to dom at a time
+    this.delay_size = 25; // initial num of posts to append to dom at a time
     this.delay_size2 = 250; // num of posts to append to dom at a time
-    this.post_get_num = 20; // num of ajax calls to make at once
-    this.post_get_timeout = 200; // num of ms between batched ajax calls
+    this.post_get_num = 25; // num of ajax calls to make at once
+    this.post_get_timeout = 500; // num of ms between batched ajax calls
 
     this.region_names = region_filter_list.map((region_filter) => {
       return region_filter[0];
@@ -181,7 +181,7 @@ class App extends React.Component {
         <RegionSelect regionChanged={this.regionChanged} 
           regions={this.region_names} />
         <PostLists selected_month={selected_month} month_posts={month_posts} 
-          filters={filters} />
+          selected_region={selected_region} filters={filters} />
       </div>
     );
   }
