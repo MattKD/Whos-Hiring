@@ -100,7 +100,7 @@ class App extends React.Component {
     let posts = month.posts;
 
     const handleNewPost = (post) => {
-      if (!post || !post.text) {
+      if (!post || !post.text || post.deleted || post.dead) {
         month.num_posts -= 1;
       } else {
         let tmp_div = document.createElement("div");
