@@ -6,6 +6,7 @@ const { region_filter_list } = require("./data");
 const { getSomePosts, getHiringSubs } = require("./api");
 const { PostLists, RegionSelect, MonthSelect, LoadMsg } = 
   require("./components");
+const { filterPost } = require("./filter");
 
 class Month {
   constructor(id, name, post_ids, title) {
@@ -16,6 +17,9 @@ class Month {
     this.num_posts = post_ids ? post_ids.length : 0;
     this.post_ids = post_ids || [];
     this.loaded = false;
+    this.filtered_posts = new Map();
+    this.filtered_posts.set("All", null);
+    this.filtered_posts.set("Other", new Set());
   }
 
   allPostsLoaded() {
@@ -107,6 +111,15 @@ class App extends React.Component {
         }
         post.text = tmp_div.innerHTML;
         posts.push(post);
+
+        for (let [region, filter_set] of month.filtered_posts.entries()) {
+          if (filter_set !== null) {
+            const filters = this.region_lookup.get(region);
+            if (filterPost(post, filters)) {
+              filter_set.add(post.id);
+            }
+          }
+        }
       }
 
       const month_posts = this.state.month_posts;
@@ -173,6 +186,17 @@ class App extends React.Component {
     const thread_title = month.thread_title;
     const filters = this.region_lookup.get(selected_region);
 
+    let filter_set = month.filtered_posts.get(selected_region);
+    if (filter_set === undefined) {
+      filter_set = new Set();
+      for (let post of month.posts) {
+        if (filterPost(post, filters)) {
+          filter_set.add(post.id);
+        }
+      }
+      month.filtered_posts.set(selected_region, filter_set);
+    }
+
     return (
       <div>
         <h1>{thread_title} </h1>
@@ -181,7 +205,7 @@ class App extends React.Component {
         <RegionSelect regionChanged={this.regionChanged} 
           regions={this.region_names} />
         <PostLists selected_month={selected_month} month_posts={month_posts} 
-          selected_region={selected_region} filters={filters} />
+          selected_region={selected_region} filter_set={filter_set} />
       </div>
     );
   }

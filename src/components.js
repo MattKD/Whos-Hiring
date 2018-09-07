@@ -118,22 +118,33 @@ class PostList extends React.PureComponent {
   render() {
     let posts = this.props.posts;
     let filter_set = this.props.filter_set;
-    if (filter_set === null) {
-      filter_set = new Set();
-    }
+    let $posts = null;
 
-    let $posts = posts.map((post) => {
-      const show = filter_set.has(post.id);
-      const post_style = {
-        display:  show ? "block" : "none"
-      };
+    let makeDomPost = (post, post_style) => {
       return (
         <div key={post.id} style={post_style}>
           <hr/>
           <Post id={post.id} text={post.text} />
         </div>
       );
-    });
+    };
+
+    if (filter_set === null) {
+      $posts = posts.map((post) => {
+        const post_style = {
+          display: "block"
+        };
+        return makeDomPost(post, post_style);
+      });
+    } else {
+      $posts = posts.map((post) => {
+        const show = filter_set.has(post.id);
+        const post_style = {
+          display:  show ? "block" : "none"
+        };
+        return makeDomPost(post, post_style);
+      });
+    }
 
     return (
       <div>
@@ -148,7 +159,6 @@ class PostLists extends React.PureComponent {
     const selected_month = this.props.selected_month;
     const selected_region = this.props.selected_region;
     const month_posts = this.props.month_posts;
-    const filters = this.props.filters;
     let num_shown = 0;
 
     let post_lists = [];
@@ -161,15 +171,9 @@ class PostLists extends React.PureComponent {
         display:  show ? "block" : "none"
       };
 
-      let filter_set = null;
+      const filter_set = show ? this.props.filter_set : null;
       if (show) {
-        filter_set = new Set();
-        posts.forEach((post) => {
-          if (filterPost(post, filters)) {
-            filter_set.add(post.id);
-          }
-        });
-        num_shown = filter_set.size;
+        num_shown = filter_set === null ? posts.length : filter_set.size;
       }
 
       post_lists.push(
