@@ -95,4 +95,48 @@ for (let i = 2; i < region_filter_list.length; i++) {
 
 region_filter_list.push(["Other", [], other_negfilters]);
 
+function joinFilters(filters) {
+  const sensitive_filters = [];
+  const insensitive_filters = [];
+  for (let filter of filters) {
+    if (filter.endsWith("/i")) {
+      insensitive_filters.push(filter.slice(0,-2));
+    } else {
+      sensitive_filters.push(filter);
+    }
+  }
+
+  let sfilter = sensitive_filters[0] || "";
+  if (sensitive_filters.length > 1) {
+    sfilter = sensitive_filters.map((filter) => "(" + filter + ")")
+              .join("|");
+    sfilter = "(" + sfilter + ")";
+  }
+
+  let ifilter = insensitive_filters[0] || "";
+  if (insensitive_filters.length > 1) {
+    ifilter = insensitive_filters.map((filter) => "(" + filter + ")")
+              .join("|");
+    ifilter = "(" + infilter + ")";
+  }
+
+  const new_filters = [];
+
+  if (sfilter !== "") {
+    new_filters.push(sfilter);
+  }
+  if (ifilter !== "") {
+    ifilter += "/i";
+    new_filters.push(ifilter);
+  }
+  return new_filters;
+}
+
+for (let region_filter of region_filter_list) {
+  region_filter[1] = joinFilters(region_filter[1]);
+  if (region_filter.length > 2) {
+    region_filter[2] = joinFilters(region_filter[2]);
+  }
+}
+
 module.exports.region_filter_list = region_filter_list;

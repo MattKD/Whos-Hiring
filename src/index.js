@@ -18,8 +18,8 @@ class Month {
     this.post_ids = post_ids || [];
     this.loaded = false;
     this.filtered_posts = new Map();
-    this.filtered_posts.set("All", null);
-    this.filtered_posts.set("Other", new Set());
+    this.filtered_posts.set("All", null); // null will skip filtering
+    this.filtered_posts.set("Other", new Set()); // prefilter Other
   }
 
   allPostsLoaded() {

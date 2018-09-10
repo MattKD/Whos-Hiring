@@ -1,9 +1,5 @@
 
 function filterPost(post, filters) {
-  if (!post || !post.text) {
-    return false;
-  }
-
   let filter_strs = filters.filters;
   let negfilter_strs = filters.negfilters;
 
