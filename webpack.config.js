@@ -1,24 +1,21 @@
-var config = {
+module.exports = {
   entry: __dirname + '/src/index.js',
 	
   output: {
-    path: __dirname + "/public/js",
+    path: __dirname + '/public/js',
     filename: 'index.js',
   },
 	
   module: {
-    loaders: [
-    {
-      test: /\.jsx?$/,
-      exclude: /node_modules/,
-      loader: 'babel-loader',
-    }
+    rules: [
+      {
+        test: /\.jsx?$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader'
+        }
+      }
     ]
-  },
-
-  resolve: {
-    extensions: [".js", ".jsx"]
   }
-}
+};
 
-module.exports = config;
