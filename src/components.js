@@ -1,5 +1,4 @@
 const React = require("react");
-const { filterPost } = require("./filter");
 
 class LoadMsg extends React.PureComponent {
   constructor() {
@@ -107,7 +106,7 @@ class Post extends React.PureComponent {
 
     return (
       <div> 
-        <a href={url} target="_blank">{url}</a>
+        <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
         <div dangerouslySetInnerHTML={{__html: text}}></div>
       </div>
     );

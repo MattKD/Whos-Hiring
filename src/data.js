@@ -117,7 +117,7 @@ function joinFilters(filters) {
   if (insensitive_filters.length > 1) {
     ifilter = insensitive_filters.map((filter) => "(" + filter + ")")
               .join("|");
-    ifilter = "(" + infilter + ")";
+    ifilter = "(" + ifilter + ")";
   }
 
   const new_filters = [];

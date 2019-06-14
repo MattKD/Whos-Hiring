@@ -108,6 +108,7 @@ class App extends React.Component {
         let links = tmp_div.getElementsByTagName("a");
         for (let link of links) {
           link.setAttribute("target", "_blank");
+          link.setAttribute("rel", "noopener noreferrer");
         }
         post.text = tmp_div.innerHTML;
         posts.push(post);

@@ -13,7 +13,7 @@ function filterPost(post, filters) {
     let re_str = "(\\W|^)+" + filter + "(\\W|$)+";
     let re = new RegExp(re_str, ignoreCase);
     let result = post.text.search(re);
-    if (result != -1) {
+    if (result !== -1) {
       return false;
     }
   }
@@ -32,7 +32,7 @@ function filterPost(post, filters) {
     let re_str = "(\\W|^)+" + filter + "(\\W|$)+";
     let re = new RegExp(re_str, ignoreCase);
     let result = post.text.search(re);
-    if (result != -1) {
+    if (result !== -1) {
       return true;
     }
   }
